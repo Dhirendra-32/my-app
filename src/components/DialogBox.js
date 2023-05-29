@@ -14,6 +14,7 @@ export default function DialogBox({
 	setManualsetRows,
 	editRowData,
 }) {
+	console.log('check Button CLick ', editRowData)
 	return (
 		<Dialog
 			open={openDialog}

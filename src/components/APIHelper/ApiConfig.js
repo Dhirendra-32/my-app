@@ -7,13 +7,13 @@ export const axiosInstance = axios.create({
 	baseURL: API_BASE_URL,
 	headers: {
 		'Content-Type': 'application/json',
-		Authorization: `Bearer ${localStorage.getItem('token')}`,
+		Authorization: `Bearer ${localStorage.getItem('access_token')}`,
 	},
 })
 
-export const getRequest = async (url) => {
+export const getRequest = async (url, header = null) => {
 	try {
-		const response = await axiosInstance.get(url)
+		const response = await axiosInstance.get(url, header)
 		return response
 	} catch (error) {
 		throw error
@@ -22,13 +22,13 @@ export const getRequest = async (url) => {
 
 export const postRequest = async (url, data) => {
 	try {
-		const token = localStorage.getItem('token')
+		const access_token = localStorage.getItem('access_token')
 		const headers = {
 			'Content-Type': 'application/json',
 		}
 
-		if (token) {
-			headers.Authorization = `Bearer ${token}`
+		if (access_token) {
+			headers.Authorization = `Bearer ${access_token}`
 		}
 
 		const response = await axiosInstance.post(url, data, { headers })
@@ -40,13 +40,13 @@ export const postRequest = async (url, data) => {
 
 export const patchRequest = async (url, data) => {
 	try {
-		const token = localStorage.getItem('token')
+		const access_token = localStorage.getItem('access_token')
 		const headers = {
 			'Content-Type': 'application/json',
 		}
 
-		if (token) {
-			headers.Authorization = `Bearer ${token}`
+		if (access_token) {
+			headers.Authorization = `Bearer ${access_token}`
 		}
 
 		const response = await axiosInstance.patch(url, data, { headers })

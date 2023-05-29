@@ -31,17 +31,14 @@ function AutoDeploye({ id, handleRow, close, editRowData }) {
 			{ name: 'cnormabell5j', value: 'bfeak5j' },
 		],
 	}
-
-	const modal = [
-		{
-			objectNo: 'OJBECT_01',
-			component: 'Global Script',
-			selection: 'sample.py,SN_CA_Googly.py',
-		},
-	]
+	const generateUniqueKey = () => {
+		const currentDate = new Date()
+		const uniqueKey = currentDate.getTime().toString()
+		return uniqueKey
+	}
 
 	const [formValues, setFormValues] = useState({
-		ComponentID: modal[0].objectNo,
+		ComponentID: generateUniqueKey(),
 		ComponentType: '',
 		ComponentName: [],
 		MigrationId: id,

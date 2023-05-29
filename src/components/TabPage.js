@@ -10,32 +10,7 @@ import GenericTab from '../components/TabComponents/GenericTab'
 export default function ColorTabs({ id, formData }) {
 	const [value, setValue] = useState('Auto Components')
 	const [openDialog, setOpenDialog] = useState(false)
-	const [AutotableRows, setRows] = useState([
-		{
-			ComponentID: 1,
-			ComponentType: 'Global Script',
-			ComponentName: [{ name: 'GS.py', value: 'GS.py' }],
-			MigrationId: 1,
-			ViaPackage: false,
-		},
-		{
-			ComponentID: 2,
-			ComponentType: 'Custom Action',
-			ComponentName: [{ name: 'Example.py', value: 'Example.py' }],
-			MigrationId: 2,
-			ViaPackage: true,
-		},
-		{
-			ComponentID: 3,
-			ComponentType: 'Cart Calculation',
-			ComponentName: [
-				{ name: 'Example.py', value: 'Example.py' },
-				{ name: 'Example.py', value: 'Example.py' },
-			],
-			MigrationId: 3,
-			ViaPackage: false,
-		},
-	])
+	const [AutotableRows, setRows] = useState([])
 	const [ManualtableRows, setManualRows] = useState([])
 	const [editRowData, setEditRowData] = useState(null)
 
@@ -45,6 +20,7 @@ export default function ColorTabs({ id, formData }) {
 
 	const handleOpenDialog = () => {
 		setOpenDialog(true)
+		setEditRowData(null)
 	}
 
 	const handleCloseDialog = () => {
@@ -118,7 +94,7 @@ export default function ColorTabs({ id, formData }) {
 		console.log('table edit clicked')
 		console.log(rowData)
 		setEditRowData(rowData) // Set the row data to be edited in the state
-		handleOpenDialog() // Open the dialog box
+		setOpenDialog(true) // Open the dialog box
 	}
 
 	const handleDeleteRow = (rowData) => {
@@ -180,15 +156,17 @@ export default function ColorTabs({ id, formData }) {
 					handleDeleteRow={handleDeleteRow}
 				/>
 			)}
-			<DialogBox
-				openDialog={openDialog}
-				handleCloseDialog={handleCloseDialog}
-				value={value}
-				id={id}
-				setRowsFoAuto={setRowsFoAuto}
-				setManualsetRows={setManualsetRows}
-				editRowData={editRowData}
-			/>
+			{openDialog && (
+				<DialogBox
+					openDialog={openDialog}
+					handleCloseDialog={handleCloseDialog}
+					value={value}
+					id={id}
+					setRowsFoAuto={setRowsFoAuto}
+					setManualsetRows={setManualsetRows}
+					editRowData={editRowData}
+				/>
+			)}
 		</Box>
 	)
 }

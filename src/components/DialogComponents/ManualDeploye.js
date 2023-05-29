@@ -9,8 +9,13 @@ function ManualDeploye({ id, handleRow, close, editRowData }) {
 		{ value: 'Workflow Action', name: 'Workflow Action' },
 		{ value: 'Custom Field', name: 'Custom Field' },
 	]
+	const generateUniqueKey = () => {
+		const currentDate = new Date()
+		const uniqueKey = currentDate.getTime().toString()
+		return uniqueKey
+	}
 	const [formValues, setFormValues] = useState({
-		ComponentID: 'OJBECT_01',
+		ComponentID: generateUniqueKey(),
 		ComponentType: '',
 		ComponentName: '',
 		MigrationId: id,
@@ -18,7 +23,6 @@ function ManualDeploye({ id, handleRow, close, editRowData }) {
 	})
 	useEffect(() => {
 		if (editRowData) {
-			// Update form data with the editRowData props
 			setFormValues(editRowData)
 		}
 	}, [editRowData])

@@ -1,5 +1,4 @@
 import React, { createContext, useState, useEffect } from 'react'
-
 const FormDataContext = createContext()
 
 const FormDataProvider = ({ children }) => {
@@ -19,42 +18,82 @@ const FormDataProvider = ({ children }) => {
 		requestorName: '',
 		deploymentStatus: '',
 	})
+	console.log('Context')
 	useEffect(() => {
+		const fetchDataWithRetry = async (data, retry = true) => {
+			try {
+				const getURL = `/getmigrationById/${parseInt(
+					data.MIGRATIONID.split('_')[1]
+				)}`
+				const access_token = localStorage.getItem('access_token')
+				const headers = {
+					Authorization: `Bearer ${access_token}`,
+				}
+				const URL =
+					'https://secondapp-industrious-badger-je.cfapps.us10-001.hana.ondemand.com' +
+					getURL
+				const response = await fetch(URL, {
+					headers,
+				})
+				const responseData = await response.json()
+
+				if (response.status === 200) {
+					if (responseData.Migrations.MigrationName) {
+						UpdateSaveState(true)
+					}
+
+					UpdateStateFromAPI(responseData.Migrations)
+				} else if (response.status === 401 && retry) {
+					await refreshToken()
+					fetchDataWithRetry(data, false)
+				}
+			} catch (error) {
+				console.log(error)
+				if (error.response && error.response.status === 401 && retry) {
+					console.log(retry ? 'First' : 'second')
+
+					await refreshToken()
+					fetchDataWithRetry(data, false) // Retry without allowing further retries
+				} else {
+					console.error(error)
+				}
+			}
+		}
+
+		const refreshToken = async () => {
+			try {
+				const RefreshURL =
+					'https://secondapp-industrious-badger-je.cfapps.us10-001.hana.ondemand.com/refresh'
+				const refresh_token = localStorage.getItem('refresh_token')
+				console.log('refresh_token', refresh_token)
+				if (refresh_token) {
+					const refreshResponse = await fetch(RefreshURL, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${refresh_token}`,
+						},
+					})
+					if (refreshResponse.ok) {
+						const { access_token } = await refreshResponse.json()
+						console.info('Received new token: ' + String(access_token))
+						localStorage.setItem('access_token', access_token)
+					}
+				}
+			} catch (error) {
+				console.error(error)
+			}
+		}
+
 		const storedFormValues = localStorage.getItem('formValues')
 		if (storedFormValues) {
 			setShowForm(true)
 			const data = JSON.parse(storedFormValues)
 			setFormData(data)
-			const fetchData = async (data) => {
-				try {
-					const getURL = `/getmigrationById/${parseInt(
-						data.MIGRATIONID.split('_')[1]
-					)}`
-					const token = localStorage.getItem('token')
-					const headers = {
-						Authorization: `Bearer ${token}`,
-					}
-					const URL =
-						'https://secondapp-industrious-badger-je.cfapps.us10-001.hana.ondemand.com' +
-						getURL
-					const response = await fetch(URL, {
-						headers,
-					})
-					const responseData = await response.json()
-
-					if (response.status === 200) {
-						UpdateStateFromAPI(responseData)
-					}
-
-					// Process the response data or update state
-				} catch (error) {
-					// Handle error
-				}
-			}
-
-			fetchData(data)
+			fetchDataWithRetry(data)
 		}
 	}, [])
+
 	const fetchFormValue = (data) => {
 		setFormData(data)
 		setShowForm(true)
@@ -65,33 +104,16 @@ const FormDataProvider = ({ children }) => {
 	}
 
 	const UpdateCurrentState = (name, newValue, isMulti = false) => {
-		if (isMulti) {
-			setCurrentState((prevState) => ({
-				...prevState,
-				[name]: newValue,
-			}))
-		} else {
-			setCurrentState((prevState) => ({
-				...prevState,
-				[name]: newValue,
-			}))
-		}
+		setCurrentState((prevState) => ({
+			...prevState,
+			[name]: newValue,
+		}))
 	}
 
 	const UpdateStateFromAPI = (responseData) => {
 		setCurrentState((prevState) => ({
 			...prevState,
-			selectedApprover: responseData.Migrations.selectedApprover,
-			selectedDestination: responseData.Migrations.selectedDestination,
-			selectedSource: responseData.Migrations.selectedSource,
-			isrepoUpdated: responseData.Migrations.isrepoUpdated,
-			isUnitTested: responseData.Migrations.isUnitTested,
-			MigrationName: responseData.Migrations.MigrationName,
-			releaseVersion: responseData.Migrations.releaseVersion,
-			MigrationId: responseData.Migrations.MigrationId,
-			CustomerName: responseData.Migrations.CustomerName,
-			requestorName: responseData.Migrations.requestorName,
-			deploymentStatus: responseData.Migrations.deploymentStatus,
+			...responseData,
 		}))
 	}
 

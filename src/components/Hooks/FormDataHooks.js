@@ -6,14 +6,3 @@ function useMigrationContext() {
 }
 
 export default useMigrationContext
-
-/*
-
-
-import { useEffect, useState } from 'react'
-import Login from './components/PageComponents/Login'
-import SideBar from './components/SideBar'
-import { FormDataProvider } from './components/Appcontext/MigrationContext'
-import { BrowserRouter as Router } from 'react-router-dom'
-
-*/

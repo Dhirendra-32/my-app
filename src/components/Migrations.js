@@ -3,18 +3,18 @@ import { TextField, Button, Grid, Box } from '@mui/material'
 import { Checkbox, FormControlLabel } from '@mui/material'
 import MultiSelect from './SelectComponents/MultipleSelect'
 import SingleSelect from './SelectComponents/SingleSelect'
-import CenteredLoader from '../components/LoaderComponents/CenterLoader'
 import ColorTabs from './TabPage'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import useMigrationContext from './Hooks/FormDataHooks'
-import { postRequest, patchRequest } from './APIHelper/ApiConfig'
+import { patchRequest } from './APIHelper/ApiConfig'
+import { refreshTokenGet } from './utils'
 const Migration = () => {
-	console.log('Migration component')
-	const { formValues, fetchFormValue, showForm } = useMigrationContext()
+	const { formValues, showForm } = useMigrationContext()
 	const { Save, UpdateSaveState } = useMigrationContext()
 	const { currentState, UpdateCurrentState } = useMigrationContext()
 	const [loading, setLoading] = useState(false)
+	console.log('Migration component')
 
 	const handleChange = (event) => {
 		const { name, value, checked, type } = event.target
@@ -33,32 +33,13 @@ const Migration = () => {
 		UpdateCurrentState(propertyName, selectedOptions, isMulti)
 	}
 
-	const handleButtonClick = async () => {
-		setLoading(true)
-
-		try {
-			const response = await postRequest('/createnew', {})
-			if (response) {
-				fetchFormValue(response.data.newForm)
-				setLoading(false)
-				localStorage.setItem(
-					'formValues',
-					JSON.stringify(response.data.newForm)
-				)
-			}
-		} catch (error) {
-			console.error('Error:', error)
-			setLoading(false)
-		}
-	}
-
 	const handleSubmit = (e) => {
 		e.preventDefault()
 		setLoading(true)
 		updateFormOnServer()
 	}
 
-	const updateFormOnServer = async () => {
+	const updateFormOnServer = async (retry = true) => {
 		const data = {
 			APPROVEDBY: currentState.selectedApprover
 				.map((approver) => approver.value)
@@ -80,6 +61,7 @@ const Migration = () => {
 
 		try {
 			const response = await patchRequest('/save', data)
+			console.log(response)
 			if (response.status === 200) {
 				toast.success('Form saved successfully!', {
 					position: 'top-center',
@@ -91,18 +73,36 @@ const Migration = () => {
 				})
 				UpdateSaveState(true)
 				setLoading(false)
+			} else if (response.status === 401 && retry) {
+				console.log('Hi Token is failed and retrying...')
+				await refreshTokenGet()
+				updateFormOnServer(false)
 			}
 		} catch (error) {
 			console.error('Error:', error)
-			setLoading(false)
-			toast.error('Failed to save form!', {
-				position: 'top-center',
-				autoClose: 3000,
-				hideProgressBar: false,
-				closeOnClick: true,
-				draggable: true,
-				progress: undefined,
-			})
+			if (error.response && error.response.status === 401 && retry) {
+				toast.info('Failed to save. Retrying...', {
+					position: 'top-center',
+					autoClose: 2000,
+					hideProgressBar: false,
+					closeOnClick: true,
+					draggable: true,
+					progress: undefined,
+				})
+				console.log(retry ? 'First ' : 'Second')
+				await refreshTokenGet()
+				updateFormOnServer(false)
+			} else {
+				setLoading(false)
+				toast.error('Failed to save form!', {
+					position: 'top-center',
+					autoClose: 3000,
+					hideProgressBar: false,
+					closeOnClick: true,
+					draggable: true,
+					progress: undefined,
+				})
+			}
 		}
 	}
 	const label = loading && showForm ? 'Updating...' : 'Save'
@@ -117,178 +117,161 @@ const Migration = () => {
 				// Add any other custom styling properties here
 			}}
 		>
-			{loading && !showForm ? <CenteredLoader label={'Loading...'} /> : null}
-			{showForm ? (
-				<div>
-					<form onSubmit={handleSubmit}>
-						<Grid container spacing={2}>
-							<Grid item xs={6}>
-								<TextField
-									required
-									InputProps={{
-										readOnly: true,
-									}}
-									name="CUSTOMNAME"
-									value={formValues.CUSTOMNAME}
-									fullWidth
-									margin="normal"
-									color="success"
-									label="Customer name (read only)"
-								/>
-							</Grid>
-							<Grid item xs={6}>
-								<TextField
-									required
-									InputProps={{
-										readOnly: true,
-									}}
-									name="MigrationId"
-									value={formValues.MIGRATIONID}
-									fullWidth
-									margin="normal"
-									color="success"
-									label="Deployment Id (read only)"
-								/>
-							</Grid>
-							<Grid item xs={6}>
-								<TextField
-									required
-									name="MigrationName"
-									label="Migration Name"
-									value={currentState.MigrationName}
-									onChange={handleChange}
-									fullWidth
-									margin="normal"
-								/>
-							</Grid>
-							<Grid item xs={6}>
-								<TextField
-									disabled
-									name="category"
-									value={formValues.DEPLOYEMENTSTATUS}
-									fullWidth
-									margin="normal"
-									label="Status (read only)"
-								/>
-							</Grid>
-							<Grid item xs={6}>
-								<MultiSelect
-									options={formValues.APPROVEDBY}
-									value={currentState.selectedApprover}
-									onChange={(e, selectedOptions) =>
-										handleMultiChange('selectedApprover', selectedOptions)
-									}
-									label="Select Approvers"
-								/>
-							</Grid>
-							<Grid item xs={6}>
-								<div>
-									<SingleSelect
-										options={formValues.CPQSOURCE}
-										selectedOption={currentState.selectedSource}
-										handleChange={handleChange}
-										label="Select Source Env"
-										name="selectedSource"
-									/>
-								</div>
-							</Grid>
-							<Grid item xs={6} sx={{ mt: 2 }}>
-								<MultiSelect
-									options={formValues.CPQDESTINATION}
-									value={currentState.selectedDestination}
-									onChange={(e, selectedOptions) =>
-										handleMultiChange('selectedDestination', selectedOptions)
-									}
-									label="Select Destination Env"
-								/>
-							</Grid>
-							<Grid item xs={6} sx={{ mt: 2 }}>
-								<div>
-									<SingleSelect
-										options={formValues.RELEASEVERSION}
-										selectedOption={currentState.releaseVersion}
-										handleChange={handleChange}
-										label="Select Release Version"
-										name="releaseVersion"
-									/>
-								</div>
-							</Grid>
-							<Grid item xs={6}>
-								<TextField
-									InputProps={{
-										readOnly: true,
-									}}
-									id="outlined-required"
-									value={formValues.REQUESTORName}
-									name="REQUESTORName"
-									label="Requestor Name(read only)"
-									fullWidth
-									margin="normal"
-								/>
-							</Grid>
-							<Grid item xs={6} sx={{ mt: 2 }}>
-								<FormControlLabel
-									control={
-										<Checkbox
-											checked={currentState.isUnitTested}
-											onChange={handleChange}
-											name="isUnitTested"
-										/>
-									}
-									label="Unit Tested ?"
-								/>
-								<FormControlLabel
-									control={
-										<Checkbox
-											checked={currentState.isrepoUpdated}
-											onChange={handleChange}
-											name="isrepoUpdated"
-										/>
-									}
-									label="Repo Updated ?"
-								/>
-							</Grid>
+			<div>
+				<form onSubmit={handleSubmit}>
+					<Grid container spacing={2}>
+						<Grid item xs={6}>
+							<TextField
+								required
+								InputProps={{
+									readOnly: true,
+								}}
+								name="CUSTOMNAME"
+								value={formValues.CUSTOMNAME || ''}
+								fullWidth
+								margin="normal"
+								color="success"
+								label="Customer name (read only)"
+							/>
 						</Grid>
-						<Button
-							disabled={loading}
-							type="submit"
-							color="success"
-							variant="outlined"
-							sx={{
-								mt: 2,
-								color: '#3a1f3f',
-								borderColor: '#3a1f3f',
-								'&:hover': {
-									backgroundColor: '#3a1f3f',
-									color: '#fff',
-								},
-							}}
-						>
-							{label}
-						</Button>
-						<Grid>
-							{Save && (
-								<ColorTabs
-									id={formValues.MIGRATIONID}
-									formData={currentState}
-								/>
-							)}
+						<Grid item xs={6}>
+							<TextField
+								required
+								InputProps={{
+									readOnly: true,
+								}}
+								name="MigrationId"
+								value={formValues.MIGRATIONID || ''}
+								fullWidth
+								margin="normal"
+								color="success"
+								label="Deployment Id (read only)"
+							/>
 						</Grid>
-					</form>
-					<ToastContainer />
-				</div>
-			) : (
-				!loading && (
+						<Grid item xs={6}>
+							<TextField
+								required
+								name="MigrationName"
+								label="Migration Name"
+								value={currentState.MigrationName || ''}
+								onChange={handleChange}
+								fullWidth
+								margin="normal"
+							/>
+						</Grid>
+						<Grid item xs={6}>
+							<TextField
+								disabled
+								name="category"
+								value={formValues.DEPLOYEMENTSTATUS || ''}
+								fullWidth
+								margin="normal"
+								label="Status (read only)"
+							/>
+						</Grid>
+						<Grid item xs={6}>
+							<MultiSelect
+								options={formValues.APPROVEDBY}
+								value={currentState.selectedApprover}
+								onChange={(e, selectedOptions) =>
+									handleMultiChange('selectedApprover', selectedOptions)
+								}
+								label="Select Approvers"
+							/>
+						</Grid>
+						<Grid item xs={6}>
+							<div>
+								<SingleSelect
+									options={formValues.CPQSOURCE}
+									selectedOption={currentState.selectedSource}
+									handleChange={handleChange}
+									label="Select Source Env"
+									name="selectedSource"
+								/>
+							</div>
+						</Grid>
+						<Grid item xs={6} sx={{ mt: 2 }}>
+							<MultiSelect
+								options={formValues.CPQDESTINATION}
+								value={currentState.selectedDestination || ''}
+								onChange={(e, selectedOptions) =>
+									handleMultiChange('selectedDestination', selectedOptions)
+								}
+								label="Select Destination Env"
+							/>
+						</Grid>
+						<Grid item xs={6} sx={{ mt: 2 }}>
+							<div>
+								<SingleSelect
+									options={formValues.RELEASEVERSION}
+									selectedOption={currentState.releaseVersion}
+									handleChange={handleChange}
+									label="Select Release Version"
+									name="releaseVersion"
+								/>
+							</div>
+						</Grid>
+						<Grid item xs={6}>
+							<TextField
+								InputProps={{
+									readOnly: true,
+								}}
+								id="outlined-required"
+								value={formValues.REQUESTORName || ''}
+								name="REQUESTORName"
+								label="Requestor Name(read only)"
+								fullWidth
+								margin="normal"
+							/>
+						</Grid>
+						<Grid item xs={6} sx={{ mt: 2 }}>
+							<FormControlLabel
+								control={
+									<Checkbox
+										checked={currentState.isUnitTested}
+										onChange={handleChange}
+										name="isUnitTested"
+									/>
+								}
+								label="Unit Tested ?"
+							/>
+							<FormControlLabel
+								control={
+									<Checkbox
+										checked={currentState.isrepoUpdated}
+										onChange={handleChange}
+										name="isrepoUpdated"
+									/>
+								}
+								label="Repo Updated ?"
+							/>
+						</Grid>
+					</Grid>
 					<Button
-						color="secondary"
+						disabled={loading}
+						type="submit"
+						color="success"
 						variant="outlined"
-						sx={{ mt: 2 }}
-						onClick={handleButtonClick}
+						sx={{
+							mt: 2,
+							color: '#3a1f3f',
+							borderColor: '#3a1f3f',
+							'&:hover': {
+								backgroundColor: '#3a1f3f',
+								color: '#fff',
+							},
+						}}
 					>
-						create new
+						{label}
 					</Button>
-				)
-			)}
+					<Grid>
+						{Save && (
+							<ColorTabs id={formValues.MIGRATIONID} formData={currentState} />
+						)}
+					</Grid>
+				</form>
+				<ToastContainer />
+			</div>
 		</Box>
 	)
 }

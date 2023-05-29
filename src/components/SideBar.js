@@ -5,13 +5,16 @@ import MigrationList from './MigrationList'
 import Migration from './Migrations'
 import { AppBar, Toolbar, Button, Typography } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
-
+import useMigrationContext from './Hooks/FormDataHooks'
 function Sidebar({ onLogout }) {
 	console.log('sidebar component')
+	const { Save, UpdateSaveState } = useMigrationContext()
+	console.log('save', Save)
 	const navigate = useNavigate()
 	const handleLogout = () => {
 		localStorage.clear()
 		onLogout(false)
+		UpdateSaveState(false)
 		navigate('/')
 	}
 	return (
@@ -24,9 +27,12 @@ function Sidebar({ onLogout }) {
 					<Button component={Link} to="/" color="inherit">
 						Migration List
 					</Button>
-					<Button component={Link} to="/Migration" color="inherit">
-						Migration
-					</Button>
+					{Save && (
+						<Button component={Link} to="/Migration" color="inherit">
+							Migration
+						</Button>
+					)}
+
 					<Button color="inherit" onClick={handleLogout}>
 						Logout
 					</Button>

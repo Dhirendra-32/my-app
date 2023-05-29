@@ -2,14 +2,14 @@ import { useState } from 'react'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import { Box } from '@mui/system'
-import CircularIndeterminate from '../LoaderComponents/Loader'
 import { postRequest } from '../APIHelper/ApiConfig'
 
 function Login({ onLogin }) {
 	const [username, setUsername] = useState('')
 	const [password, setPassword] = useState('')
 	const [loading, setLoading] = useState(false)
-	console.log('login component')
+	console.log('login Component')
+
 	const handleFormSubmit = async (event) => {
 		event.preventDefault()
 		setLoading(true)
@@ -17,9 +17,11 @@ function Login({ onLogin }) {
 		const data = { username, password }
 		const response = await postRequest(loginURL, data)
 		if (response) {
-			console.info('Login ', response.data.token)
-			const token = response.data.token
-			localStorage.setItem('token', token)
+			console.info('Login ', response.data.access_token)
+			const access_token = response.data.access_token
+			const refresh_token = response.data.refresh_token
+			localStorage.setItem('access_token', access_token)
+			localStorage.setItem('refresh_token', refresh_token)
 			setLoading(false)
 			onLogin(true)
 		}
@@ -35,7 +37,6 @@ function Login({ onLogin }) {
 				height: '50vh',
 			}}
 		>
-			{loading && <CircularIndeterminate />}
 			<form onSubmit={handleFormSubmit}>
 				<TextField
 					required
@@ -62,7 +63,7 @@ function Login({ onLogin }) {
 				/>
 
 				<Button type="submit" variant="contained" color="secondary">
-					Submit
+					{loading ? 'checking..' : 'Login'}
 				</Button>
 			</form>
 		</Box>

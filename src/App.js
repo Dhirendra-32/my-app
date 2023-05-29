@@ -1,40 +1,41 @@
 import { useEffect, useState } from 'react'
 import Login from './components/PageComponents/Login'
 import SideBar from './components/SideBar'
-import { FormDataProvider } from './components/Appcontext/MigrationContext'
 import { BrowserRouter as Router } from 'react-router-dom'
+import CenteredLoader from './components/LoaderComponents/CenterLoader'
 function App() {
 	const [authenticated, setAuthenticated] = useState(false)
+	const [loading, setLoading] = useState(false)
 
 	useEffect(() => {
-		const token = localStorage.getItem('token')
-		if (token) {
+		const access_token = localStorage.getItem('access_token')
+		if (access_token) {
 			setAuthenticated(true)
-		} else {
-			setAuthenticated(false)
 		}
-	}, [authenticated])
+		setLoading(true)
+	}, [])
 
 	const handleAuthentication = (value) => {
-		console.log(value)
 		setAuthenticated(value)
-	}
-
-	if (authenticated) {
-		return (
-			<FormDataProvider>
-				<Router>
-					<div className="App">
-						<SideBar onLogout={handleAuthentication} />
-					</div>
-				</Router>
-			</FormDataProvider>
-		)
 	}
 
 	return (
 		<div className="App">
-			{!authenticated ? <Login onLogin={handleAuthentication} /> : null}
+			{!loading ? (
+				<CenteredLoader label={'Loading data...'} /> // Render a loading indicator or message
+			) : (
+				<>
+					{!authenticated ? (
+						<Login onLogin={handleAuthentication} />
+					) : (
+						<Router>
+							<div className="App">
+								<SideBar onLogout={handleAuthentication} />
+							</div>
+						</Router>
+					)}
+				</>
+			)}
 		</div>
 	)
 }
