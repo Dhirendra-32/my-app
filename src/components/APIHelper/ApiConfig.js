@@ -13,7 +13,15 @@ export const axiosInstance = axios.create({
 
 export const getRequest = async (url, header = null) => {
 	try {
-		const response = await axiosInstance.get(url, header)
+		const access_token = localStorage.getItem('access_token')
+		const headers = {
+			'Content-Type': 'application/json',
+		}
+
+		if (access_token) {
+			headers.Authorization = `Bearer ${access_token}`
+		}
+		const response = await axiosInstance.get(url, headers)
 		return response
 	} catch (error) {
 		throw error

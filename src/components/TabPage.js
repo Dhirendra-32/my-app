@@ -153,17 +153,7 @@ export default function ColorTabs({ id, formData }) {
 			return newRows
 		})
 
-		const res = performDeleteOnServer(rowData)
-		if (res) {
-			toast.success('Item deleted successfully!', {
-				position: 'bottom-right',
-				autoClose: 3000,
-				hideProgressBar: false,
-				closeOnClick: true,
-				draggable: true,
-				progress: undefined,
-			})
-		}
+		performDeleteOnServer(rowData)
 	}
 
 	const tabs = [
