@@ -1,7 +1,7 @@
 ---
 applications:
-  - name: xcpq.deployenow
-    path: build/
-    instances: 1
-    buildpack: staticfile_buildpack
-    memory: 256M
+  - name: xcpq-deployenow
+path: build/
+instances: 1
+buildpack: https://github.com/cloudfoundry/staticfile-buildpack.git
+memory: 256M
