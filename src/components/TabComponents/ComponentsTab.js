@@ -7,6 +7,7 @@ import Button from '@mui/material/Button'
 import useMigrationContext from '../Hooks/FormDataHooks'
 import { getRequest } from '../APIHelper/ApiConfig'
 import CenteredLoader from '../LoaderComponents/CenterLoader'
+import { refreshTokenGet } from '../utils'
 export default function ComponentsTab({
 	tbrows,
 	handleOpenDialog,
@@ -18,18 +19,36 @@ export default function ComponentsTab({
 		useMigrationContext()
 	const [loading, setLoading] = useState(false)
 	const handleButtonClick = async () => {
+		const Url = '/getautocomponents/AccentureDemo'
 		if (!isButtonClicked) {
 			try {
 				setLoading(true)
 				console.log(currentState.selectedSource || '')
-				const Url = '/getautocomponents/AccentureDemo'
 				const response = await getRequest(Url)
-
-				setLoading(false)
-				localStorage.setItem('Auto', JSON.stringify(response.data))
-				updateAutoComponent(response.data)
+				if (response.status === 200) {
+					setLoading(false)
+					localStorage.setItem('Auto', JSON.stringify(response.data))
+					updateAutoComponent(response.data)
+				} else if (response.status === 401) {
+					await refreshTokenGet()
+					const response = await getRequest(Url)
+					if (response.status === 200) {
+						setLoading(false)
+						localStorage.setItem('Auto', JSON.stringify(response.data))
+						updateAutoComponent(response.data)
+					}
+				}
 			} catch (error) {
-				console.error(error)
+				if (error.response && error.response.status === 401) {
+					await refreshTokenGet()
+					const response = await getRequest(Url)
+					if (response.status === 200) {
+						setLoading(false)
+						localStorage.setItem('Auto', JSON.stringify(response.data))
+						updateAutoComponent(response.data)
+					}
+				}
+				console.log(error)
 			}
 		}
 
