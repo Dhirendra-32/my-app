@@ -3,60 +3,37 @@ import { TextField, Grid, Box } from '@mui/material'
 import SingleSelect from '../SelectComponents/SingleSelect'
 import MultiSelect from '../SelectComponents/MultipleSelect'
 import GenricButton from '../GenericButton'
-
+import useMigrationContext from '../Hooks/FormDataHooks'
+import { SaveRowServer, UpdateRowOnServer, generateUniqueKey } from '../utils'
 function AutoDeploye({ id, handleRow, close, editRowData }) {
-	const components1 = [
+	const { autoComponent } = useMigrationContext()
+	const componentsList = [
 		{ value: 'Global Script', name: 'Global Script1' },
 		{ value: 'Custom Action', name: 'custom Action1' },
 		{ value: 'Cart Calculation', name: 'Cart Calculation1' },
 	]
-	const AutoComponent = {
-		'Global Script': [
-			{ name: 'SN_Global_Script1', value: 'SN_Global_Script1.py' },
-			{ name: 'SN_Global_Script2', value: 'SN_Global_Script2.py' },
-			{ name: 'SN_Global_Script3', value: 'SN_Global_Script3.py' },
-			{ name: 'SN_Global_Script4', value: 'SN_Global_Script4.py' },
-		],
-		'Custom Action': [
-			{ name: 'SN_Custom_Script1', value: 'SN_Custom_Action_Script1.py' },
-			{ name: 'SN_Custom_Script2', value: 'SN_Custom_Action_Script2.py' },
-			{ name: 'SN_Custom_Script3', value: 'SN_Custom_Action_Script3.py' },
-			{ name: 'SN_Custom_Script4', value: 'SN_Custom_Action_Script4.py' },
-		],
-		'Cart Calculation': [
-			{ name: 'ikornacki0', value: 'fmatessian0' },
-			{ name: 'jmarfell1', value: 'dervin1' },
-			{ name: 'cregenhardt2', value: 'klotterington2' },
-			{ name: 'sborn3', value: 'ttuiller3' },
-			{ name: 'cnormabell5j', value: 'bfeak5j' },
-		],
-	}
-	const generateUniqueKey = () => {
-		const currentDate = new Date()
-		const uniqueKey = currentDate.getTime().toString()
-		return uniqueKey
-	}
 
 	const [formValues, setFormValues] = useState({
-		ComponentID: generateUniqueKey(),
+		ComponentID: '',
 		ComponentType: '',
 		ComponentName: [],
 		MigrationId: id,
 		ViaPackage: false,
+		Unikey: generateUniqueKey('AUTO'),
 	})
+
 	useEffect(() => {
 		if (editRowData) {
-			// Update form data with the editRowData props
 			setFormValues(editRowData)
 		}
 	}, [editRowData])
+
 	const handleSingleChange = (e) => {
 		setFormValues((prevValues) => ({
 			...prevValues,
 			ComponentType: e.target.value,
 			ComponentName: [],
 		}))
-		console.log(formValues)
 	}
 
 	const handleMultiSelectChange = (e, selectedOptions) => {
@@ -66,34 +43,82 @@ function AutoDeploye({ id, handleRow, close, editRowData }) {
 		}))
 	}
 
-	const handleSubmit = (e) => {
+	const handleSubmit = async (e) => {
+		let payload
 		e.preventDefault()
-		handleRow(formValues)
 		close()
+
+		const Action = e.target.innerText
+		if (Action === 'ADD' && formValues) {
+			payload = {
+				COMPONENTTYPE: formValues.ComponentType,
+				COMPONENTNAME: formValues.ComponentName.map(
+					(component) => component.value
+				).join(','),
+				MIGRATION_ID: parseInt(formValues.MigrationId.split('_')[1]),
+				VIAPACKAGE: formValues.ViaPackage,
+				UNIKEY: formValues.Unikey,
+			}
+
+			const response = await SaveRowServer(JSON.stringify(payload))
+			if (response) {
+				UpdateStateFromResponse(response)
+				handleRow('Auto', response)
+			}
+		} else {
+			payload = {
+				COMPONENTID: formValues.ComponentID,
+				COMPONENTTYPE: formValues.ComponentType,
+				COMPONENTNAME: formValues.ComponentName.map(
+					(component) => component.value
+				).join(','),
+				MIGRATION_ID: formValues.MigrationId,
+				VIAPACKAGE: formValues.ViaPackage,
+				UNIKEY: formValues.Unikey,
+			}
+			const isPass = await UpdateRowOnServer(JSON.stringify(payload))
+			if (isPass) {
+				handleRow('Auto', formValues)
+			}
+		}
+	}
+
+	const UpdateStateFromResponse = (response) => {
+		setFormValues((prevFormValues) => ({
+			...prevFormValues,
+			ComponentID: response.ComponentID,
+			ComponentType: response.ComponentType,
+			ComponentName: response.ComponentName,
+			MigrationId: response.MigrationId,
+			ViaPackage: response.ViaPackage,
+			Unikey: response.Unikey,
+		}))
 	}
 
 	return (
 		<Box sx={{ p: 3 }}>
 			<form onSubmit={handleSubmit}>
 				<Grid container>
-					<Grid item xs={12} sx={{ mt: 2 }}>
-						<TextField
-							required
-							InputProps={{
-								readOnly: true,
-							}}
-							value={formValues.ComponentID}
-							name="ComponentType"
-							fullWidth
-							margin="normal"
-							color="success"
-						/>
-					</Grid>
+					{formValues.ComponentID && (
+						<Grid item xs={12} sx={{ mt: 2 }}>
+							<TextField
+								required
+								InputProps={{
+									readOnly: true,
+								}}
+								value={formValues.ComponentID || ''}
+								name="ComponentType"
+								fullWidth
+								margin="normal"
+								color="success"
+							/>
+						</Grid>
+					)}
 
 					<Grid item xs={12} sx={{ mt: 2 }}>
 						<SingleSelect
-							options={components1}
-							selectedOption={formValues.ComponentType}
+							options={componentsList}
+							selectedOption={formValues.ComponentType || ''}
 							handleChange={handleSingleChange}
 							label="Select Component"
 							name="Select Component"
@@ -101,12 +126,12 @@ function AutoDeploye({ id, handleRow, close, editRowData }) {
 					</Grid>
 
 					{formValues.ComponentType &&
-						AutoComponent[formValues.ComponentType] && ( // Check if the selected component and its corresponding options exist
+						autoComponent[formValues.ComponentType] && (
 							<Grid item xs={12} sx={{ mt: 2 }}>
 								<Grid item xs={12}>
 									<MultiSelect
-										options={AutoComponent[formValues.ComponentType]}
-										value={formValues.ComponentName}
+										options={autoComponent[formValues.ComponentType]}
+										value={formValues.ComponentName || []}
 										onChange={(e, selectedOptions) =>
 											handleMultiSelectChange(e, selectedOptions)
 										}
@@ -118,7 +143,10 @@ function AutoDeploye({ id, handleRow, close, editRowData }) {
 						)}
 
 					<Grid item xs={12} sx={{ mt: 2 }}>
-						<GenricButton ButtonHandler={handleSubmit} name={'Save'} />
+						<GenricButton
+							ButtonHandler={handleSubmit}
+							name={!editRowData ? 'Add' : 'Update'}
+						/>
 					</Grid>
 				</Grid>
 			</form>

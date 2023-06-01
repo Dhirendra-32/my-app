@@ -8,7 +8,6 @@ function Login({ onLogin }) {
 	const [username, setUsername] = useState('')
 	const [password, setPassword] = useState('')
 	const [loading, setLoading] = useState(false)
-	console.log('login Component')
 
 	const handleFormSubmit = async (event) => {
 		event.preventDefault()

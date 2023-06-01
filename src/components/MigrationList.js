@@ -27,11 +27,10 @@ const MigrationList = () => {
 		try {
 			setnotLoading(false)
 			const response = await postRequest('/createnew', {})
+
 			if (response.status === 200) {
 				const newForm = response.data.newForm
-				fetchFormValue(newForm)
-				UpdateStateFromAPI(initialState)
-				UpdateSaveState(true)
+				updateFormAndState(newForm)
 				setnotLoading(true)
 				navigate('/Migration')
 				localStorage.setItem('formValues', JSON.stringify(newForm))
@@ -39,19 +38,17 @@ const MigrationList = () => {
 		} catch (error) {
 			if (error.response && error.response.status === 401) {
 				await refreshTokenGet()
-				const response = await postRequest('/createnew', {})
-				if (response.status === 200) {
-					const newForm = response.data.newForm
-					fetchFormValue(newForm)
-					UpdateStateFromAPI(initialState)
-					UpdateSaveState(true)
-					setnotLoading(true)
-					navigate('/Migration')
-					localStorage.setItem('formValues', JSON.stringify(newForm))
-				}
+				handleCreateNew() // Retry the creation after refreshing the token
+			} else {
+				console.error('Error:', error)
 			}
-			console.error('Error:', error)
 		}
+	}
+
+	const updateFormAndState = (newForm) => {
+		fetchFormValue(newForm)
+		UpdateStateFromAPI(initialState)
+		UpdateSaveState(false)
 	}
 
 	return (

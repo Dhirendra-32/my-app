@@ -9,12 +9,12 @@ import 'react-toastify/dist/ReactToastify.css'
 import useMigrationContext from './Hooks/FormDataHooks'
 import { patchRequest } from './APIHelper/ApiConfig'
 import { refreshTokenGet } from './utils'
+
 const Migration = () => {
 	const { formValues, showForm } = useMigrationContext()
 	const { Save, UpdateSaveState } = useMigrationContext()
 	const { currentState, UpdateCurrentState } = useMigrationContext()
 	const [loading, setLoading] = useState(false)
-	console.log('Migration component')
 
 	const handleChange = (event) => {
 		const { name, value, checked, type } = event.target
@@ -120,7 +120,7 @@ const Migration = () => {
 			<div>
 				<form onSubmit={handleSubmit}>
 					<Grid container spacing={2}>
-						<Grid item xs={6}>
+						<Grid item xs={12} md={6}>
 							<TextField
 								required
 								InputProps={{
@@ -134,7 +134,7 @@ const Migration = () => {
 								label="Customer name (read only)"
 							/>
 						</Grid>
-						<Grid item xs={6}>
+						<Grid item xs={12} md={6}>
 							<TextField
 								required
 								InputProps={{
@@ -148,7 +148,7 @@ const Migration = () => {
 								label="Deployment Id (read only)"
 							/>
 						</Grid>
-						<Grid item xs={6}>
+						<Grid item xs={12} md={6}>
 							<TextField
 								required
 								name="MigrationName"
@@ -159,7 +159,7 @@ const Migration = () => {
 								margin="normal"
 							/>
 						</Grid>
-						<Grid item xs={6}>
+						<Grid item xs={12} md={6}>
 							<TextField
 								disabled
 								name="category"
@@ -169,7 +169,7 @@ const Migration = () => {
 								label="Status (read only)"
 							/>
 						</Grid>
-						<Grid item xs={6}>
+						<Grid item xs={12} md={6}>
 							<MultiSelect
 								options={formValues.APPROVEDBY}
 								value={currentState.selectedApprover}
@@ -179,7 +179,7 @@ const Migration = () => {
 								label="Select Approvers"
 							/>
 						</Grid>
-						<Grid item xs={6}>
+						<Grid item xs={12} md={6}>
 							<div>
 								<SingleSelect
 									options={formValues.CPQSOURCE}
@@ -190,7 +190,7 @@ const Migration = () => {
 								/>
 							</div>
 						</Grid>
-						<Grid item xs={6} sx={{ mt: 2 }}>
+						<Grid item xs={12} md={6}>
 							<MultiSelect
 								options={formValues.CPQDESTINATION}
 								value={currentState.selectedDestination || ''}
@@ -200,7 +200,7 @@ const Migration = () => {
 								label="Select Destination Env"
 							/>
 						</Grid>
-						<Grid item xs={6} sx={{ mt: 2 }}>
+						<Grid item xs={12} md={6}>
 							<div>
 								<SingleSelect
 									options={formValues.RELEASEVERSION}
@@ -211,7 +211,7 @@ const Migration = () => {
 								/>
 							</div>
 						</Grid>
-						<Grid item xs={6}>
+						<Grid item xs={12} md={6}>
 							<TextField
 								InputProps={{
 									readOnly: true,
@@ -224,10 +224,15 @@ const Migration = () => {
 								margin="normal"
 							/>
 						</Grid>
-						<Grid item xs={6} sx={{ mt: 2 }}>
+						<Grid item xs={12} md={6}>
 							<FormControlLabel
 								control={
 									<Checkbox
+										sx={{
+											'&.Mui-checked': {
+												color: '#3a1f3f',
+											},
+										}}
 										checked={currentState.isUnitTested}
 										onChange={handleChange}
 										name="isUnitTested"
@@ -238,6 +243,11 @@ const Migration = () => {
 							<FormControlLabel
 								control={
 									<Checkbox
+										sx={{
+											'&.Mui-checked': {
+												color: '#3a1f3f',
+											},
+										}}
 										checked={currentState.isrepoUpdated}
 										onChange={handleChange}
 										name="isrepoUpdated"

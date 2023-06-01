@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Box from '@mui/material/Box'
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -6,13 +6,84 @@ import DialogBox from './DialogBox'
 import ComponentsTab from '../components/TabComponents/ComponentsTab'
 import ManualStepsTab from '../components/TabComponents/ManualStepsTab'
 import GenericTab from '../components/TabComponents/GenericTab'
-
+import CenteredLoader from './LoaderComponents/CenterLoader'
+import { performDeleteOnServer } from './utils'
 export default function ColorTabs({ id, formData }) {
+	const [loading, setLoading] = useState(false)
 	const [value, setValue] = useState('Auto Components')
 	const [openDialog, setOpenDialog] = useState(false)
-	const [AutotableRows, setRows] = useState([])
-	const [ManualtableRows, setManualRows] = useState([])
+	const [tableRows, setTableRows] = useState({
+		Auto: [],
+		Manual: [],
+	})
 	const [editRowData, setEditRowData] = useState(null)
+	useEffect(() => {
+		const fetchDataWithRetry = async (retry = true) => {
+			try {
+				const getURL = `/getcomponent/${parseInt(id.split('_')[1])}`
+				const access_token = localStorage.getItem('access_token')
+				const headers = {
+					Authorization: `Bearer ${access_token}`,
+				}
+				const URL =
+					'https://secondapp-industrious-badger-je.cfapps.us10-001.hana.ondemand.com' +
+					getURL
+				setLoading(true)
+				const response = await fetch(URL, {
+					headers,
+				})
+				const responseData = await response.json()
+
+				if (response.status === 200) {
+					setLoading(false)
+					setTableRows({
+						Auto: responseData.Component.Auto,
+						Manual: responseData.Component.Manual,
+					})
+				} else if (response.status === 401 && retry) {
+					await refreshToken()
+					fetchDataWithRetry(id, false)
+				}
+			} catch (error) {
+				console.log(error)
+				if (error.response && error.response.status === 401 && retry) {
+					console.log(retry ? 'First' : 'second')
+
+					await refreshToken()
+					fetchDataWithRetry(id, false) // Retry without allowing further retries
+				} else {
+					console.error(error)
+				}
+			}
+		}
+
+		const refreshToken = async () => {
+			try {
+				const RefreshURL =
+					'https://secondapp-industrious-badger-je.cfapps.us10-001.hana.ondemand.com/refresh'
+				const refresh_token = localStorage.getItem('refresh_token')
+				console.log('refresh_token', refresh_token)
+				if (refresh_token) {
+					const refreshResponse = await fetch(RefreshURL, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${refresh_token}`,
+						},
+					})
+					if (refreshResponse.ok) {
+						const { access_token } = await refreshResponse.json()
+						console.info('Received new token: ' + String(access_token))
+						localStorage.setItem('access_token', access_token)
+					}
+				}
+			} catch (error) {
+				console.error(error)
+			}
+		}
+
+		fetchDataWithRetry(id)
+	}, [id])
 
 	const handleChange = (event, newValue) => {
 		setValue(newValue)
@@ -27,57 +98,34 @@ export default function ColorTabs({ id, formData }) {
 		setOpenDialog(false)
 	}
 
-	const setRowsFoAuto = (obj) => {
-		const existingObjIndex = AutotableRows.findIndex(
-			(row) => row.ComponentID === obj.ComponentID
-		)
-
-		if (existingObjIndex !== -1) {
-			// Update the property of an existing object
-			setRows((prevRows) => {
-				const newRows = [...prevRows]
-				newRows[existingObjIndex] = {
-					...newRows[existingObjIndex],
+	const setRows = (type, obj) => {
+		setTableRows((prevRows) => {
+			const newRows = { ...prevRows }
+			const existingObjIndex = newRows[type].findIndex(
+				(row) => row.ComponentID === obj.ComponentID
+			)
+			if (existingObjIndex !== -1) {
+				newRows[type][existingObjIndex] = {
+					...newRows[type][existingObjIndex],
 					ComponentType: obj.ComponentType,
 					ComponentName: obj.ComponentName,
 					MigrationId: obj.MigrationId,
 					ViaPackage: obj.ViaPackage,
+					Unikey: obj.Unikey,
 				}
-				return newRows
-			})
-		} else {
-			// Add the object if it doesn't exist
-			setRows((prevRows) => [...prevRows, obj])
-		}
-	}
-
-	const setManualsetRows = (obj) => {
-		const existingObjIndex = ManualtableRows.findIndex(
-			(row) => row.ComponentID === obj.ComponentID
-		)
-		if (existingObjIndex !== -1) {
-			// Update the property of an existing object
-			setManualRows((prevRows) => {
-				const newRows = [...prevRows]
-				newRows[existingObjIndex] = {
-					...newRows[existingObjIndex],
-					ComponentType: obj.ComponentType,
-					ComponentName: obj.ComponentName,
-					MigrationId: obj.MigrationId,
-					ViaPackage: obj.ViaPackage,
-				}
-				return newRows
-			})
-		} else {
-			setManualRows((prevRows) => [...prevRows, obj])
-		}
+			} else {
+				newRows[type].push(obj)
+			}
+			return newRows
+		})
 	}
 
 	const handleDeploy = () => {
-		let payload = {}
-		payload['AutoSetup'] = AutotableRows
-		payload['ManualSetup'] = ManualtableRows
-		payload['formData'] = formData
+		const payload = {
+			AutoSetup: tableRows.Auto,
+			ManualSetup: tableRows.Manual,
+			formData: formData,
+		}
 		console.log(payload)
 
 		toast.success('Scripts deployed successfully!', {
@@ -91,34 +139,33 @@ export default function ColorTabs({ id, formData }) {
 	}
 
 	const handleEditRow = (rowData) => {
-		console.log('table edit clicked')
-		console.log(rowData)
-		setEditRowData(rowData) // Set the row data to be edited in the state
-		setOpenDialog(true) // Open the dialog box
+		setEditRowData(rowData)
+		setOpenDialog(true)
 	}
 
 	const handleDeleteRow = (rowData) => {
-		if (value === 'Auto Components') {
-			const UpdatedArray = AutotableRows.filter((row) => {
-				return row.ComponentID !== rowData.ComponentID
-			})
-			setRows(UpdatedArray)
-		} else {
-			const ManualUpdatedArray = ManualtableRows.filter((row) => {
-				return row.ComponentID !== rowData.ComponentID
-			})
-			setManualRows(ManualUpdatedArray)
-		}
-		toast.success('item deleted successfully!', {
-			position: 'bottom-right',
-			autoClose: 3000,
-			hideProgressBar: false,
-			closeOnClick: true,
-			draggable: true,
-			progress: undefined,
-			theme: 'dark',
+		const type = value === 'Auto Components' ? 'Auto' : 'Manual'
+		setTableRows((prevRows) => {
+			const newRows = { ...prevRows }
+			newRows[type] = newRows[type].filter(
+				(row) => row.ComponentID !== rowData.ComponentID
+			)
+			return newRows
 		})
+
+		const res = performDeleteOnServer(rowData)
+		if (res) {
+			toast.success('Item deleted successfully!', {
+				position: 'bottom-right',
+				autoClose: 3000,
+				hideProgressBar: false,
+				closeOnClick: true,
+				draggable: true,
+				progress: undefined,
+			})
+		}
 	}
+
 	const tabs = [
 		{ value: 'Auto Components', label: 'Auto Components' },
 		{ value: 'Manual Components', label: 'Manual Components' },
@@ -136,36 +183,40 @@ export default function ColorTabs({ id, formData }) {
 			}}
 		>
 			<GenericTab value={value} onChange={handleChange} tabs={tabs} />
-			{value === 'Auto Components' && (
-				<ComponentsTab
-					tbrows={AutotableRows}
-					handleOpenDialog={handleOpenDialog}
-					handleDeploy={handleDeploy}
-					AutotableRows={AutotableRows}
-					handleEditRow={handleEditRow}
-					handleDeleteRow={handleDeleteRow}
-				/>
-			)}
-			{value === 'Manual Components' && (
-				<ManualStepsTab
-					tbrows={ManualtableRows}
-					handleOpenDialog={handleOpenDialog}
-					handleDeploy={handleDeploy}
-					ManualtableRows={ManualtableRows}
-					handleEditRow={handleEditRow}
-					handleDeleteRow={handleDeleteRow}
-				/>
-			)}
-			{openDialog && (
-				<DialogBox
-					openDialog={openDialog}
-					handleCloseDialog={handleCloseDialog}
-					value={value}
-					id={id}
-					setRowsFoAuto={setRowsFoAuto}
-					setManualsetRows={setManualsetRows}
-					editRowData={editRowData}
-				/>
+
+			{!loading ? (
+				<div>
+					{value === 'Auto Components' && (
+						<ComponentsTab
+							tbrows={tableRows.Auto}
+							handleOpenDialog={handleOpenDialog}
+							handleDeploy={handleDeploy}
+							handleEditRow={handleEditRow}
+							handleDeleteRow={handleDeleteRow}
+						/>
+					)}
+					{value === 'Manual Components' && (
+						<ManualStepsTab
+							tbrows={tableRows.Manual}
+							handleOpenDialog={handleOpenDialog}
+							handleDeploy={handleDeploy}
+							handleEditRow={handleEditRow}
+							handleDeleteRow={handleDeleteRow}
+						/>
+					)}
+					{openDialog && (
+						<DialogBox
+							openDialog={openDialog}
+							handleCloseDialog={handleCloseDialog}
+							value={value}
+							id={id}
+							setRows={setRows}
+							editRowData={editRowData}
+						/>
+					)}
+				</div>
+			) : (
+				<CenteredLoader />
 			)}
 		</Box>
 	)

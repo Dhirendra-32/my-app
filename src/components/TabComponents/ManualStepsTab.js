@@ -9,7 +9,6 @@ export default function ManualStepsTab({
 	tbrows,
 	handleOpenDialog,
 	handleDeploy,
-	ManualtableRows,
 	handleEditRow,
 	handleDeleteRow,
 }) {
@@ -19,7 +18,7 @@ export default function ManualStepsTab({
 			<IconButton color="primary" onClick={handleOpenDialog}>
 				<AddCircleIcon fontSize="large" />
 			</IconButton>
-			{ManualtableRows.length > 0 && (
+			{tbrows.length > 0 && (
 				<Button
 					sx={{
 						mt: 1,

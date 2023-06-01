@@ -41,11 +41,12 @@ export default function CustomizedTables({
 				<TableHead>
 					<TableRow>
 						<StyledTableCell>Actions</StyledTableCell>
-						<StyledTableCell align="right">Object Id</StyledTableCell>
+						<StyledTableCell align="right">ComponentID</StyledTableCell>
 						<StyledTableCell align="right">Component</StyledTableCell>
 						<StyledTableCell align="right">Scripts</StyledTableCell>
-						<StyledTableCell align="right">Order</StyledTableCell>
-						<StyledTableCell align="right">Via Package ?</StyledTableCell>
+						<StyledTableCell align="right">MigrationID</StyledTableCell>
+						<StyledTableCell align="right">ViaPackage ?</StyledTableCell>
+						<StyledTableCell align="right">Type</StyledTableCell>
 					</TableRow>
 				</TableHead>
 				<TableBody>
@@ -83,6 +84,7 @@ export default function CustomizedTables({
 										{row.MigrationId}
 									</StyledTableCell>
 									<StyledTableCell align="right">{`${row.ViaPackage}`}</StyledTableCell>
+									<StyledTableCell align="right">{row.Unikey}</StyledTableCell>
 								</StyledTableRow>
 						  ))
 						: []}

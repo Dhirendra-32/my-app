@@ -5,6 +5,7 @@ const FormDataProvider = ({ children }) => {
 	const [formValues, setFormData] = useState({})
 	const [showForm, setShowForm] = useState(false)
 	const [Save, SetSave] = useState(false)
+	const [autoComponent, setautoComponent] = useState(null)
 	const [currentState, setCurrentState] = useState({
 		selectedApprover: [],
 		selectedDestination: [],
@@ -18,7 +19,8 @@ const FormDataProvider = ({ children }) => {
 		requestorName: '',
 		deploymentStatus: '',
 	})
-	console.log('Context')
+	const [isButtonClicked, setIsButtonClicked] = useState(false)
+
 	useEffect(() => {
 		const fetchDataWithRetry = async (data, retry = true) => {
 			try {
@@ -86,6 +88,10 @@ const FormDataProvider = ({ children }) => {
 		}
 
 		const storedFormValues = localStorage.getItem('formValues')
+		const AutoComponet = localStorage.getItem('Auto')
+		if (AutoComponet) {
+			setautoComponent(JSON.parse(AutoComponet))
+		}
 		if (storedFormValues) {
 			setShowForm(true)
 			const data = JSON.parse(storedFormValues)
@@ -117,6 +123,10 @@ const FormDataProvider = ({ children }) => {
 		}))
 	}
 
+	const updateAutoComponent = (data) => {
+		setautoComponent(data)
+		setIsButtonClicked(true)
+	}
 	const valueToShare = {
 		formValues,
 		fetchFormValue,
@@ -126,6 +136,9 @@ const FormDataProvider = ({ children }) => {
 		Save,
 		UpdateSaveState,
 		UpdateStateFromAPI,
+		updateAutoComponent,
+		autoComponent,
+		isButtonClicked,
 	}
 	return (
 		<FormDataContext.Provider value={valueToShare}>

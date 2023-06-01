@@ -56,3 +56,22 @@ export const patchRequest = async (url, data) => {
 		throw error
 	}
 }
+
+export const deleteRequest = async (url) => {
+	try {
+		const access_token = localStorage.getItem('access_token')
+		const headers = {
+			'Content-Type': 'application/json',
+		}
+
+		if (access_token) {
+			headers.Authorization = `Bearer ${access_token}`
+		}
+
+		const response = await axiosInstance.delete(url, { headers })
+		return response
+	} catch (error) {
+		console.error('Error:', error)
+		throw error
+	}
+}

@@ -10,11 +10,9 @@ export default function DialogBox({
 	handleCloseDialog,
 	value,
 	id,
-	setRowsFoAuto,
-	setManualsetRows,
+	setRows,
 	editRowData,
 }) {
-	console.log('check Button CLick ', editRowData)
 	return (
 		<Dialog
 			open={openDialog}
@@ -34,14 +32,14 @@ export default function DialogBox({
 				{value === 'Auto Components' ? (
 					<AutoDeploye
 						id={id}
-						handleRow={setRowsFoAuto}
+						handleRow={setRows}
 						close={handleCloseDialog}
 						editRowData={editRowData}
 					/>
 				) : (
 					<Manual
 						id={id}
-						handleRow={setManualsetRows}
+						handleRow={setRows}
 						close={handleCloseDialog}
 						editRowData={editRowData}
 					/>
